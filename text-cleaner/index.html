@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全功能 Markdown 文本清洗与透视工具 (完美换行版)</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; color: #333; background: #fdfdfd; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .box { border: 1px solid #ccc; border-radius: 6px; padding: 12px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .box-title { font-weight: bold; margin-bottom: 8px; color: #007BFF; display: flex; justify-content: space-between; align-items: center; }
+        
+        textarea, pre { width: 100%; height: 130px; margin: 0; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; font-family: monospace; }
+        textarea { font-family: sans-serif; font-size: 14px; }
+        pre { background: #272822; color: #f8f8f2; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+        
+        button { padding: 10px 18px; color: white; border: none; cursor: pointer; border-radius: 4px; font-size: 14px; margin: 4px; font-weight: bold; }
+        .btn-purple { background-color: #6f42c1; } .btn-purple:hover { background-color: #593196; }
+        .btn-green { background-color: #28a745; } .btn-green:hover { background-color: #218838; }
+        
+        .badge { display: inline-block; padding: 2px 5px; background: #dc3545; color: white; border-radius: 3px; font-size: 11px; margin: 0 2px; font-weight: normal; }
+        .badge-space { background: #ffc107; color: #212529; }
+        .status-tag { font-size: 11px; color: #666; font-weight: normal; background: #eee; padding: 2px 6px; border-radius: 10px; }
+        
+        #previewZone { height: 130px; overflow-y: auto; background: #f8f9fa; border: 1px solid #ddd; padding: 8px; border-radius: 4px; white-space: pre-wrap; font-size: 14px; box-sizing: border-box; }
+        
+        .control-panel { text-align: center; margin-bottom: 15px; background: #f1f8ff; padding: 15px; border-radius: 6px; border: 1px solid #cce5ff; display: flex; flex-direction: column; gap: 12px; }
+        select { padding: 6px; font-size: 14px; border-radius: 4px; border: 1px solid #ccc; cursor: pointer; width: 80%; max-width: 500px; }
+    </style>
+</head>
+<body>
+
+    <h2>全功能 Markdown 文本清洗与透视工具 (完美换行版)</h2>
+    
+    <div class="box" style="margin-bottom: 15px;">
+        <div class="box-title">1. 原始文本输入区 (支持 #标题 及 **加粗** 语法)</div>
+        <textarea id="inputText" placeholder="在这里粘贴您的文本..."></textarea>
+    </div>
+
+    <div class="control-panel">
+        <div style="font-weight: bold; color: #d32f2f;">
+            <label for="newlineStrategy">⚙️ 换行处理策略：</label><br>
+            <select id="newlineStrategy">
+                <option value="keep_all">1. 保持原样：保留所有现有的换行符</option>
+                <option value="merge_multiple" selected>2. 压缩空行：将两个及以上的连续换行合并为一个 (默认推荐)</option>
+                <option value="pdf_smart">3. PDF智能修复：删除单换行(拼接断句)，保留双换行为段落</option>
+                <option value="remove_all">4. 无情模式：彻底抹除所有换行符 (强制合并为一整段)</option>
+            </select>
+        </div>
+        <div>
+            <button class="btn-purple" onclick="processAllInOne()">✨ 一键执行：强力去空格 + 解析Markdown + 生成Word格式</button>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="box">
+            <div class="box-title">2. 编译后的 HTML 富文本源码 <span id="htmlStatus" class="status-tag">等待处理</span></div>
+            <pre id="htmlSource">等待处理...</pre>
+        </div>
+        <div class="box">
+            <div class="box-title">3. 清洗前的纯文本结构透视 <span id="textStatus" class="status-tag">等待处理</span></div>
+            <div id="textDiagnostic" style="height: 130px; overflow-y: auto; background: #f8f9fa; padding: 8px; border: 1px solid #ddd; font-family: monospace; white-space: pre-wrap; font-size: 12px; box-sizing: border-box;">等待处理...</div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="box">
+            <div class="box-title">4. Word 效果实时预览 (确认标题与加粗)</div>
+            <div id="previewZone">等待处理...</div>
+        </div>
+        <div class="box" style="display: flex; flex-direction: column; justify-content: center; align-items: center; background: #f0fdf4; border: 1px solid #bbf7d0;">
+            <div class="box-title" style="color: #16a34a; margin-bottom: 15px;">5. 终极数据导出</div>
+            <button class="btn-green" id="copyBtn" onclick="copyRichTextToClipboard()" disabled style="width: 90%; padding: 15px; font-size: 15px;">📋 一键复制富文本到剪贴板</button>
+            <span style="font-size: 12px; color: #666; margin-top: 8px; text-align: center;">点击后直接去 Word 里 Ctrl+V 粘贴即可</span>
+        </div>
+    </div>
+
+    <script>
+        let finalHtmlBlobStr = "";
+        let finalPlainCleanText = "";
+
+        function processAllInOne() {
+            let rawInput = document.getElementById('inputText').value;
+            if (!rawInput) {
+                alert("请输入或粘贴文本后再执行处理。");
+                return;
+            }
+
+            // 统一换行符格式（防止不同系统复制来的回车符不一致）
+            rawInput = rawInput.replace(/\r\n/g, '\n');
+
+            document.getElementById('textStatus').innerText = `原文字数: ${rawInput.length}`;
+            renderTextDiagnostic(rawInput.substring(0, 2000), rawInput.length);
+
+            // 1. 强力去空格
+            let cleanedText = rawInput.replace(/[ \u3000\u00A0]/g, '');
+
+            // 2. 智能解析 Markdown (支持无空格连体标题写法)
+            let htmlCompiled = cleanedText
+                .replace(/^###+(.*)$/gm, '<h3>$1</h3>')
+                .replace(/^##(.*)$/gm, '<h2>$1</h2>')
+                .replace(/^#(.*)$/gm, '<h1>$1</h1>')
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+            // 3. 读取用户选择的【换行策略】
+            const strategy = document.getElementById('newlineStrategy').value;
+            
+            if (strategy === 'merge_multiple') {
+                // 【核心修复】：将连续出现的2个或更多换行符，统一替换为单换行
+                htmlCompiled = htmlCompiled.replace(/\n{2,}/g, '\n');
+                cleanedText = cleanedText.replace(/\n{2,}/g, '\n');
+            } 
+            else if (strategy === 'pdf_smart') {
+                // PDF模式：保护标题后的换行，将双换行标记为段落，删除单换行，再恢复段落
+                htmlCompiled = htmlCompiled.replace(/(<\/h[1-6]>)\n?/g, '$1___PARAGRAPH___');
+                htmlCompiled = htmlCompiled.replace(/\n{2,}/g, '___PARAGRAPH___');
+                htmlCompiled = htmlCompiled.replace(/\n/g, '');
+                htmlCompiled = htmlCompiled.replace(/___PARAGRAPH___/g, '\n');
+                cleanedText = cleanedText.replace(/\n{2,}/g, '___PARAGRAPH___').replace(/\n/g, '').replace(/___PARAGRAPH___/g, '\n');
+            } 
+            else if (strategy === 'remove_all') {
+                htmlCompiled = htmlCompiled.replace(/\n/g, '');
+                cleanedText = cleanedText.replace(/\n/g, '');
+            }
+
+            // 4. 将处理好的纯文本换行转换为 HTML 标签
+            finalHtmlBlobStr = htmlCompiled.replace(/\n/g, '<br>').replace(/<\/h([1-6])><br>/g, '</h$1>');
+            finalPlainCleanText = cleanedText.replace(/\*\*/g, '').replace(/^#+/gm, ''); 
+
+            // 渲染窗口
+            document.getElementById('htmlStatus').innerText = `源码长度: ${finalHtmlBlobStr.length} 字符`;
+            document.getElementById('htmlSource').innerText = finalHtmlBlobStr.substring(0, 3000) + (finalHtmlBlobStr.length > 3000 ? "\n\n...... [后方超长源码已自动隐藏展示] ......" : "");
+            document.getElementById('previewZone').innerHTML = finalHtmlBlobStr;
+
+            const copyBtn = document.getElementById('copyBtn');
+            copyBtn.disabled = false;
+            copyBtn.innerText = "📋 一键复制富文本到剪贴板";
+        }
+
+        function renderTextDiagnostic(text, totalLength) {
+            let visualized = text
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                .replace(/ /g, '<span class="badge badge-space">空格</span>')
+                .replace(/\n/g, '<span class="badge">↩换行</span>\n')
+                .replace(/\u3000/g, '<span class="badge badge-space">全角</span>');
+            
+            if (totalLength > 2000) { visualized += "\n\n... [为了防止页面卡死，后续部分已省略显示透视] ..."; }
+            document.getElementById('textDiagnostic').innerHTML = visualized;
+        }
+
+        async function copyRichTextToClipboard() {
+            if (!finalHtmlBlobStr) return;
+            try {
+                const htmlBlob = new Blob([finalHtmlBlobStr], { type: 'text/html' });
+                const textBlob = new Blob([finalPlainCleanText], { type: 'text/plain' });
+                const clipboardData = [new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob })];
+                await navigator.clipboard.write(clipboardData);
+                
+                const copyBtn = document.getElementById('copyBtn');
+                copyBtn.innerText = "✅ 复制成功！快去 Word 粘贴！";
+                setTimeout(() => { copyBtn.innerText = "📋 一键复制富文本到剪贴板"; }, 2000);
+            } catch (err) {
+                console.error(err);
+                alert("写入剪贴板失败。请检查浏览器权限。");
+            }
+        }
+    </script>
+
+</body>
+</html>
