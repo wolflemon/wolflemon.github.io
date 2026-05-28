@@ -1,1 +1,37 @@
-<h1>Hello Github Pages!</h1>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的工具箱 | Wolflemon's Tools</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #f4f7f6; padding: 40px 20px; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #2c3e50; margin-bottom: 40px; }
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; width: 100%; max-width: 900px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s, box-shadow 0.2s; text-decoration: none; color: #333; display: flex; flex-direction: column; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.15); }
+        .card h2 { margin-top: 0; color: #007BFF; font-size: 1.25rem; }
+        .card p { color: #666; font-size: 0.95rem; line-height: 1.5; }
+        footer { margin-top: 60px; color: #aaa; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+    <h1>🚀 个人效率工具箱</h1>
+
+    <div class="grid-container">
+        <a href="text-cleaner/index.html" class="card">
+            <h2>✨ 文本清洗与格式化</h2>
+            <p>支持 Markdown 加粗、自动识别标题、去除多余空格及精准控制换行。专为提升 Word 文档排版效率打造。</p>
+        </a>
+
+        <a href="#" class="card" style="opacity: 0.6; cursor: not-allowed;">
+            <h2>🛠️ 待开发工具</h2>
+            <p>更多高效工具正在规划中，敬请期待...</p>
+        </a>
+    </div>
+
+    <footer>Build by Wolflemon & Gemini | GitHub Pages</footer>
+
+</body>
+</html>
